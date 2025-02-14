@@ -1,7 +1,7 @@
 import torch
 import theseus as th
 from utils.train_utils import project_to_frenet_frame
-
+# 这部分代码应该是最后面的轨迹优化器
 class MotionPlanner:
     def __init__(self, trajectory_len, feature_len, device, test=False):
         self.device = device
@@ -52,12 +52,27 @@ def bicycle_model(control, current_state):
     # speed
     v = v_0.unsqueeze(1) + torch.cumsum(a * dt, dim=1)
     v = torch.clamp(v, min=0)
+    # v = torch.zeros(a.shape(0), a.shape(1))
+    # timesteps = a.shape(1)
+    # for t in range(timesteps):
+    #     if t == 0:
+    #         v[:, t] = v_0 + a[:, t] * dt
+    #     else:
+    #         v[:, t] = v[:, t-1] + a[:, t] * dt
+    #     v[:, t] = torch.clamp(v[:, t], min=0.0)
 
     # angle
     d_theta = v * delta / L # use delta to approximate tan(delta)
     theta = theta_0.unsqueeze(1) + torch.cumsum(d_theta * dt, dim=-1)
     theta = torch.fmod(theta, 2*torch.pi)
     
+    # theta = torch.zeros(d_theta.shape(0), d_theta.shape(1))
+    # for t in range(timesteps):
+    #     if t == 0:
+    #         theta[:, t] = theta_0 + d_theta[:, t] * dt
+    #     else:
+    #         theta[:, t] = theta[:, t-1] + d_theta[:, t] * dt
+    #     theta[:, t] = torch.fmod(theta[:, t], 2*torch.pi)
     # x and y coordniate
     x = x_0.unsqueeze(1) + torch.cumsum(v * torch.cos(theta) * dt, dim=-1)
     y = y_0.unsqueeze(1) + torch.cumsum(v * torch.sin(theta) * dt, dim=-1)

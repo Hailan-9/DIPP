@@ -94,7 +94,7 @@ class MultiModalTransformer(nn.Module):
         output = self.ffn(attention_output)
 
         return output
-
+# 交互注意力
 # Transformer-based encoders
 class Agent2Agent(nn.Module):
     def __init__(self):
@@ -116,8 +116,10 @@ class Agent2Map(nn.Module):
 
     def forward(self, actor, lanes, crosswalks, mask):
         query = actor.unsqueeze(1)
+        # 先单独agent2lanes agent2crosswalks
         lanes_actor = [self.lane_attention(query, lanes[:, i], lanes[:, i]) for i in range(lanes.shape[1])]
         crosswalks_actor = [self.crosswalk_attention(query, crosswalks[:, i], crosswalks[:, i]) for i in range(crosswalks.shape[1])]
+        # 然后再cat在一起，再次送入一个交叉（交互）注意力模块
         map_actor = torch.cat(lanes_actor+crosswalks_actor, dim=1)
         output = self.map_attention(query, map_actor, map_actor, mask).squeeze(2)
 
@@ -188,7 +190,7 @@ class Score(nn.Module):
         scores = self.decode(feature).squeeze(-1)
 
         return scores
-
+# 模型总体来说是比较简单和直观的
 # Build predictor
 class Predictor(nn.Module):
     def __init__(self, future_steps):
@@ -203,7 +205,7 @@ class Predictor(nn.Module):
         # map layer
         self.lane_net = LaneEncoder()
         self.crosswalk_net = CrosswalkEncoder()
-        
+        # 交互或者交叉注意力模块，interaction
         # attention layers
         self.agent_map = Agent2Map()
         self.agent_agent = Agent2Agent()

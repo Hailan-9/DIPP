@@ -33,8 +33,10 @@ def train_epoch(data_loader, predictor, planner, optimizer, use_planning):
 
         # predict
         optimizer.zero_grad()
+        # 整个网络的模型就是predictor
         plans, predictions, scores, cost_function_weights = predictor(ego, neighbors, map_lanes, map_crosswalks)
         plan_trajs = torch.stack([bicycle_model(plans[:, i], ego[:, -1])[:, :, :3] for i in range(3)], dim=1)
+        # loss的设计和计算也是很常规的
         loss = MFMA_loss(plan_trajs, predictions, scores, ground_truth, weights) # multi-future multi-agent loss
         
         # plan
