@@ -78,7 +78,7 @@ class CrossTransformer(nn.Module):
         output = self.transformer(attention_output)
 
         return output
-
+# 多模态-注意力模块
 class MultiModalTransformer(nn.Module):
     def __init__(self, modes=3, output_dim=256):
         super(MultiModalTransformer, self).__init__()
@@ -90,6 +90,7 @@ class MultiModalTransformer(nn.Module):
         attention_output = []
         for i in range(self.modes):
             attention_output.append(self.attention[i](query, key, value, key_padding_mask=mask)[0])
+        # (bt, 3, dim)
         attention_output = torch.stack(attention_output, dim=1)
         output = self.ffn(attention_output)
 
@@ -115,6 +116,7 @@ class Agent2Map(nn.Module):
         self.map_attention = MultiModalTransformer() 
 
     def forward(self, actor, lanes, crosswalks, mask):
+        # (bt, 1, 256)
         query = actor.unsqueeze(1)
         # 先单独agent2lanes agent2crosswalks
         lanes_actor = [self.lane_attention(query, lanes[:, i], lanes[:, i]) for i in range(lanes.shape[1])]
@@ -216,6 +218,8 @@ class Predictor(nn.Module):
         self.score = Score()
 
     def forward(self, ego, neighbors, map_lanes, map_crosswalks):
+        # ego shape is (bt, History, dim)
+        # neighbors shape is (bt, N, history, dim)
         # actors
         ego_actor = self.vehicle_net(ego)
         vehicles = torch.stack([self.vehicle_net(neighbors[:, i]) for i in range(10)], dim=1) 
@@ -235,6 +239,7 @@ class Predictor(nn.Module):
         map_mask[:, :, 0] = False # prevent nan
         
         # actor to actor
+        # (bt, 1+N, dim)
         agent_agent = self.agent_agent(actors, actor_mask)
         
         # map to actor
@@ -243,12 +248,15 @@ class Predictor(nn.Module):
         for i in range(actors.shape[1]):
             output = self.agent_map(agent_agent[:, i], lane_feature[:, i], crosswalk_feature[:, i], map_mask[:, i])
             map_feature.append(output[0])
+            # output[1] shape is (bt, 3, dim)
             agent_map.append(output[1])
 
         map_feature = torch.stack(map_feature, dim=1)
+        # shape is (bt, 3(modals), 1+N, dim)
         agent_map = torch.stack(agent_map, dim=2)
 
         # plan + prediction 
+        # 索引0指的是自车ego
         plans, cost_function_weights = self.plan(agent_map[:, :, 0], agent_agent[:, 0])
         predictions = self.predict(agent_map[:, :, 1:], agent_agent[:, 1:], neighbors[:, :, -1])
         scores = self.score(map_feature, agent_agent, agent_map)
