@@ -79,6 +79,7 @@ def closed_loop_test():
                     planner_inputs[f'cost_function_weight_{i+1}'] = cost_function_weights[:, i].unsqueeze(0)
 
                 with torch.no_grad():
+                    # refiment
                     final_values, info = planner.layer.forward(planner_inputs, optimizer_kwargs={'track_best_solution': True})
                     plan = info.best_solution['control_variables'].view(-1, 50, 2).to(args.device)
 

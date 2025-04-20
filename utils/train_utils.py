@@ -84,11 +84,12 @@ def motion_metrics(plan_trajectory, prediction_trajectories, ground_truth_trajec
     predictorFDE = torch.mean(predictorFDE)
 
     return plannerADE.item(), plannerFDE.item(), predictorADE.item(), predictorFDE.item()
-
+# 笛卡尔坐标系转Frenet坐标系
 def project_to_frenet_frame(traj, ref_line):
     distance_to_ref = torch.cdist(traj[:, :, :2], ref_line[:, :, :2])
     k = torch.argmin(distance_to_ref, dim=-1).view(-1, traj.shape[1], 1).expand(-1, -1, 3)
     ref_points = torch.gather(ref_line, 1, k)
+    # 投影点在笛卡尔系下的位姿
     x_r, y_r, theta_r = ref_points[:, :, 0], ref_points[:, :, 1], ref_points[:, :, 2] 
     x, y = traj[:, :, 0], traj[:, :, 1]
     s = 0.1 * (k[:, :, 0] - 200)

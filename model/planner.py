@@ -183,6 +183,7 @@ def safety(optim_vars, aux_vars):
     neighbors_len, neighbors_width = neighbors_current_state[..., -3], neighbors_current_state[..., -2]
 
     l_eps = (ego_width.unsqueeze(1) + neighbors_width)/2 + 0.5
+    # 
     frenet_neighbors = torch.stack([project_to_frenet_frame(neighbors[:, :, i].detach(), ref_line) for i in range(neighbors.shape[2])], dim=2)
     frenet_ego = project_to_frenet_frame(ego.detach(), ref_line)
     
